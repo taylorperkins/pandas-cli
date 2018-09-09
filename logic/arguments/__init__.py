@@ -4,33 +4,35 @@ import inspect
 from PyInquirer import prompt, Separator
 from style import style
 
+from utils import show_docstring_for_method
+
 
 class Arguments:
     @classmethod
     def go(cls, method):
         print(cls.__class__)
 
-        sig_args, sig_kwargs = cls._get_sig_args_and_kwargs_of_method(method)
+        sig_args, sig_kwargs, arg_defaults = cls._get_sig_args_and_kwargs_of_method(method)
 
         # Args are required, so we need user input
         if sig_args:
-            return cls._get_arguments_from_user(method, sig_args, sig_kwargs)
+            return cls._get_arguments_from_user(method, sig_args, sig_kwargs, arg_defaults)
         else:
-            return cls._get_arguments_from_user(method, sig_args, sig_kwargs) if cls._has_arguments() else {}
+            return cls._get_arguments_from_user(method, sig_args, sig_kwargs, arg_defaults) if cls._has_arguments() else {}
 
     @staticmethod
     def _get_sig_args_and_kwargs_of_method(method):
         """Grabs the args and kwargs from a given method
 
         :param method:
-        :return:
+        :return: tuple() --> (args, kwargs, defaults)
         """
         sig = inspect.getfullargspec(method)
 
         len_diff = len(sig.args) - len(sig.defaults)
 
         # parse out args and kwargs
-        return sig.args[:len_diff], sig.args[len_diff:]
+        return sig.args[:len_diff], sig.args[len_diff:], sig.defaults
 
 
     @staticmethod
@@ -47,7 +49,7 @@ class Arguments:
         return _answers['has_arguments']
 
     @classmethod
-    def _get_arguments_from_user(cls, method, sig_args, sig_kwargs):
+    def _get_arguments_from_user(cls, method, sig_args, sig_kwargs, arg_defaults):
         """Given that the user wants to specify some argument values.. This method acts as the controller to do so.
 
         :param method: some python function
@@ -56,7 +58,10 @@ class Arguments:
         :return: dict() --> {arg1: ag1__value, arg2: arg2__value, ..}
         """
         # Allow the user to specify which args he wants to pass in
-        chosen_kwargs = cls._select_all_kwargs(sig_args, sig_kwargs)
+        chosen_kwargs = cls._select_all_kwargs(sig_args, sig_kwargs, arg_defaults)
+
+        if 'Show Docstring' in chosen_kwargs:
+            return show_docstring_for_method(method, cls._get_arguments_from_user, sig_args, sig_kwargs, arg_defaults)
 
         # Clean em up a bit
         final_args = sig_args + cls._clean_chosen_kwargs(chosen_kwargs)
@@ -66,13 +71,14 @@ class Arguments:
             method=method,
             choices=final_args,
             sig_args=sig_args,
-            sig_kwargs=sig_kwargs)
+            sig_kwargs=sig_kwargs,
+            arg_defaults=arg_defaults)
 
         # Finally return all the args and values from the user
         return cls._select_args_for_values(final_args)
 
     @classmethod
-    def _select_all_kwargs(cls, sig_args, sig_kwargs):
+    def _select_all_kwargs(cls, sig_args, sig_kwargs, arg_defaults):
         """Creates a list of options for the user to choose that will ultimately be passed into a function.
         This method wraps the args in a Separator instance to serve as a disabled feature, which essentially
         requires the user to include it as a value.
@@ -83,12 +89,12 @@ class Arguments:
         """
         # Create a list of available choices to choose from based on args and kwargs
         # Make sure to disable the args by converting to a separator
-        available_choices = list()
+        available_choices = [{'name': 'Show Docstring'}]
         for arg in sig_args:
             available_choices.append(Separator(f'== {arg} =='))
 
         for ind, arg in enumerate(sig_kwargs):
-            available_choices.append({'name': f'{arg} == ({sig.defaults[ind]})'})
+            available_choices.append({'name': f'{arg} == ({arg_defaults[ind]})'})
 
         # Dropdown for the user to select any kwargs.
         return cls._select_kwargs_to_apply(available_choices)
@@ -108,7 +114,7 @@ class Arguments:
         }])['arguments']
 
     @classmethod
-    def _validate_choices(cls, method, choices, sig_args, sig_kwargs):
+    def _validate_choices(cls, method, choices, sig_args, sig_kwargs, arg_defaults):
         """The raw list method only accepts < 9 choices, so this checks for that.
         If the len is greater than 9, we start over with the args process.
 
@@ -120,7 +126,7 @@ class Arguments:
         """
         if len(choices) > 9:
             print('Sorry, but I need < 9 choices.')
-            return cls._get_arguments_from_user(method, sig_args, sig_kwargs)
+            return cls._get_arguments_from_user(method, sig_args, sig_kwargs, arg_defaults)
 
     @staticmethod
     def _clean_chosen_kwargs(_kwargs):
