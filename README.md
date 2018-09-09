@@ -2,6 +2,8 @@
 Pandas CLI!
 Note that this project is still in it's infant stages, and there are not many bells and whistles.. __yet..__
 
+Big thanks to [pandas](https://pandas.pydata.org/) for such an incredible tool, and [PyInquirer](https://github.com/CITGuru/PyInquirer) for your innovative solutions to a beautiful CLI.
+
 ### The Problem
 I am personally really passionate about finding ways to bridge the gap between software engineering and data science.
 Being a part of the data science community while working as a data analyst/software engineer, I see this gap becoming more evident all the time. 
