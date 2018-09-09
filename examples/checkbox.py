@@ -39,7 +39,8 @@ questions = [
             Separator('= The Cheeses ='),
             {
                 'name': 'Mozzarella',
-                'checked': True
+                'checked': True,
+                'disabled': True
             },
             {
                 'name': 'Cheddar'
@@ -70,7 +71,7 @@ questions = [
             }
         ],
         'validate': lambda answer: 'You must choose at least one topping.' \
-            if len(answer) == 0 else True
+            if len(answer['toppings']) == 0 else True
     }
 ]
 
