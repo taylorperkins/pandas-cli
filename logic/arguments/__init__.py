@@ -1,4 +1,6 @@
 from __future__ import print_function, unicode_literals
+from typing import Callable, Dict, Tuple, List
+
 import inspect
 
 from PyInquirer import prompt, Separator
@@ -9,9 +11,7 @@ from utils import show_docstring_for_method
 
 class Arguments:
     @classmethod
-    def go(cls, method):
-        print(cls.__class__)
-
+    def go(cls, method: Callable) -> Dict:
         sig_args, sig_kwargs, arg_defaults = cls._get_sig_args_and_kwargs_of_method(method)
 
         # Args are required, so we need user input
@@ -21,7 +21,7 @@ class Arguments:
             return cls._get_arguments_from_user(method, sig_args, sig_kwargs, arg_defaults) if cls._has_arguments() else {}
 
     @staticmethod
-    def _get_sig_args_and_kwargs_of_method(method):
+    def _get_sig_args_and_kwargs_of_method(method: Callable) -> Tuple[list, list, list]:
         """Grabs the args and kwargs from a given method
 
         :param method:
@@ -33,7 +33,6 @@ class Arguments:
 
         # parse out args and kwargs
         return sig.args[:len_diff], sig.args[len_diff:], sig.defaults
-
 
     @staticmethod
     def _has_arguments():
@@ -49,13 +48,19 @@ class Arguments:
         return _answers['has_arguments']
 
     @classmethod
-    def _get_arguments_from_user(cls, method, sig_args, sig_kwargs, arg_defaults):
+    def _get_arguments_from_user(
+            cls,
+            method: Callable,
+            sig_args: List,
+            sig_kwargs: List,
+            arg_defaults: List) -> Dict:
         """Given that the user wants to specify some argument values.. This method acts as the controller to do so.
 
         :param method: some python function
-        :param sig_args: list()
-        :param sig_kwargs: list()
-        :return: dict() --> {arg1: ag1__value, arg2: arg2__value, ..}
+        :param sig_args: all argument names from <method>
+        :param sig_kwargs: all kwarg names from <method>
+        :param arg_defaults: all defaults for the kwargs of <method>
+        :return: {arg1: ag1__value, arg2: arg2__value, ..}
         """
         # Allow the user to specify which args he wants to pass in
         chosen_kwargs = cls._select_all_kwargs(sig_args, sig_kwargs, arg_defaults)
@@ -78,13 +83,18 @@ class Arguments:
         return cls._select_args_for_values(final_args)
 
     @classmethod
-    def _select_all_kwargs(cls, sig_args, sig_kwargs, arg_defaults):
+    def _select_all_kwargs(
+            cls,
+            sig_args: List,
+            sig_kwargs: List,
+            arg_defaults: List) -> List:
         """Creates a list of options for the user to choose that will ultimately be passed into a function.
         This method wraps the args in a Separator instance to serve as a disabled feature, which essentially
         requires the user to include it as a value.
 
-        :param sig_args: list()
-        :param sig_kwargs: list()
+        :param sig_args: all argument names from <method>
+        :param sig_kwargs: all kwarg names from <method>
+        :param arg_defaults: all defaults for the kwargs of <method>
         :return: list() Args the user wants to apply to the function
         """
         # Create a list of available choices to choose from based on args and kwargs
@@ -100,10 +110,10 @@ class Arguments:
         return cls._select_kwargs_to_apply(available_choices)
 
     @staticmethod
-    def _select_kwargs_to_apply(available_choices):
+    def _select_kwargs_to_apply(available_choices: List) -> List:
         """Basic method for displaying the available kwargs, and required args for function
 
-        :param available_choices: list()
+        :param available_choices: args / kwargs for a specific function
         :return: list()
         """
         return prompt([{
@@ -114,14 +124,21 @@ class Arguments:
         }])['arguments']
 
     @classmethod
-    def _validate_choices(cls, method, choices, sig_args, sig_kwargs, arg_defaults):
+    def _validate_choices(
+            cls,
+            method: Callable,
+            choices: List,
+            sig_args: List,
+            sig_kwargs: List,
+            arg_defaults: List) -> Dict:
         """The raw list method only accepts < 9 choices, so this checks for that.
         If the len is greater than 9, we start over with the args process.
 
         :param method: some python function
         :param choices: list()
-        :param sig_args: list()
-        :param sig_kwargs: list()
+        :param sig_args: all argument names from <method>
+        :param sig_kwargs: all kwarg names from <method>
+        :param arg_defaults: all defaults for the kwargs of <method>
         :return: -
         """
         if len(choices) > 9:
@@ -129,7 +146,7 @@ class Arguments:
             return cls._get_arguments_from_user(method, sig_args, sig_kwargs, arg_defaults)
 
     @staticmethod
-    def _clean_chosen_kwargs(_kwargs):
+    def _clean_chosen_kwargs(_kwargs: List) -> List:
         """Very much dependent on `_select_all_kwargs`
         Returns the name of the kwargs
 
@@ -139,7 +156,7 @@ class Arguments:
         return [choice.split(' == ')[0] for choice in _kwargs]
 
     @staticmethod
-    def _select_args_for_values(_args):
+    def _select_args_for_values(_args: List) -> Dict:
         """Final prompt to input the values for the determined args of a function based on the user's input
 
         :param _args:
