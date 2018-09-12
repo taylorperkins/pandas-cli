@@ -4,6 +4,10 @@ from PyInquirer import prompt
 from style import style
 
 
+class NoAnswersError(Exception):
+    pass
+
+
 class Main:
     def __init__(self, session):
         self._session = session
@@ -48,5 +52,7 @@ class Main:
         _answers = prompt(self._options, style=style)
 
         print(_answers)
+        if _answers:
+            self._actions[_answers['action']].go()
 
-        self._actions[_answers['action']].go()
+        raise NoAnswersError()
